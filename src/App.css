@@ -1,38 +1,120 @@
-.App {
-  text-align: center;
-}
-
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
+@keyframes spinAnimation {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
   }
 }
 
-.App-header {
-  background-color: #282c34;
+.App {
+  text-align: center;
   min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+  overflow: hidden;
+  background-size: cover;
+  background-position: center;
+}
+
+.spinning-background {
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: inherit;
+  background-size: 50%;
+  background-repeat: repeat;
+  animation: spinAnimation 60s linear infinite;
+  z-index: -1;
+  opacity: 0.3;
+}
+
+.bread-game {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  font-size: calc(10px + 2vmin);
+  gap: 2rem;
+  background-color: rgba(255, 255, 255, 0.9);
+  padding: 2rem;
+  border-radius: 20px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  position: relative;
+  z-index: 1;
+}
+
+h1 {
+  color: #8b4513;
+  font-size: 2.5rem;
+  margin: 0;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.points-info {
+  color: #8b4513;
+  font-size: 1.2rem;
+  font-weight: bold;
+  margin-top: -1rem;
+}
+
+.bread {
+  cursor: pointer;
+  user-select: none;
+  transition: transform 0.1s ease-in-out;
+}
+
+.bread-image {
+  width: 300px;
+  height: 300px;
+  object-fit: contain;
+  pointer-events: none;
+}
+
+.bread:hover {
+  transform: scale(1.1);
+}
+
+.bread:active {
+  transform: scale(0.9);
+}
+
+.shop {
+  margin-top: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  align-items: center;
+}
+
+.shop-button {
+  padding: 12px 24px;
+  font-size: 1.2rem;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-weight: bold;
+  width: 100%;
+  min-width: 300px;
+}
+
+.shop-button.available {
+  background-color: #8b4513;
   color: white;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
-.App-link {
-  color: #61dafb;
+.shop-button.available:hover {
+  background-color: #a0522d;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
 }
 
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+.shop-button.unavailable {
+  background-color: #ccc;
+  color: #666;
+  cursor: not-allowed;
 }
