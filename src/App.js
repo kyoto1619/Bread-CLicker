@@ -1,7 +1,6 @@
 import './App.css';
 import { useState, useEffect, useRef } from 'react';
 import backgroundImage from './Bg.png';
-import susImage from './sus.jpg';
 
 function App() {
   const [points, setPoints] = useState(0);
@@ -17,7 +16,6 @@ function App() {
   const [secretButtonUsed, setSecretButtonUsed] = useState(false);
   const [secretButton2Used, setSecretButton2Used] = useState(false);
   const [isShopOpen, setIsShopOpen] = useState(false);
-  const [particles, setParticles] = useState([]);
   const clickSound = useRef(new Audio('/Click.wav'));
   const drinkSound = useRef(new Audio('/drink.wav'));
   const whooshSound = useRef(new Audio('/whoosh.wav'));
@@ -54,29 +52,6 @@ function App() {
     }
     
     animateBreadClick();
-  };
-
-  const createSusParticle = (x, y) => {
-    const id = Date.now();
-    const endX = (Math.random() - 0.5) * 300; // Random x direction
-    const endY = -100 - Math.random() * 200; // Always fly upward
-    const rotation = Math.random() * 360;
-    
-    const particle = {
-      id,
-      x,
-      y,
-      endX,
-      endY,
-      rotation
-    };
-
-    setParticles(prev => [...prev, particle]);
-
-    // Remove particle after animation
-    setTimeout(() => {
-      setParticles(prev => prev.filter(p => p.id !== id));
-    }, 1000);
   };
 
   const buyAutoClicker = () => {
