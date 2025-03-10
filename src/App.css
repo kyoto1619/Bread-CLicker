@@ -31,6 +31,10 @@
   animation: spinAnimation 60s linear infinite;
   z-index: -1;
   opacity: 0.3;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  perspective: 1000px;
+  will-change: transform;
 }
 
 .sus-background {
@@ -89,6 +93,15 @@
   transform: translateY(-50%) scale(1.1);
 }
 
+.shop-toggle.no-animation {
+  transition: none;
+}
+
+.shop-toggle.no-animation:hover {
+  transform: translateY(-50%);
+  background: #8b4513;
+}
+
 .shop-panel {
   position: fixed;
   right: -350px;
@@ -104,6 +117,10 @@
   flex-direction: column;
   gap: 1rem;
   z-index: 1000;
+}
+
+.shop-panel.no-animation {
+  transition: none;
 }
 
 .shop-panel.open {
@@ -124,10 +141,36 @@ h1 {
   margin-top: -1rem;
 }
 
+.bread-container {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 150px;
+  height: 150px;
+  margin: 0 auto;
+  will-change: transform;
+}
+
+.milk-overlay {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 2;
+  transform: translate(-50%, -50%);
+  will-change: transform;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
 .bread {
+  position: relative;
+  z-index: 1;
   cursor: pointer;
-  user-select: none;
-  transition: transform 0.1s ease-in-out;
+  transition: transform 0.1s ease-out;
+  will-change: transform;
+  transform-style: preserve-3d;
+  backface-visibility: hidden;
 }
 
 .bread-image {
@@ -135,6 +178,9 @@ h1 {
   height: 300px;
   object-fit: contain;
   pointer-events: none;
+  will-change: transform;
+  transform: translateZ(0);
+  backface-visibility: hidden;
 }
 
 .bread:hover {
@@ -182,15 +228,20 @@ h1 {
 }
 
 .secret-points-info {
-  color: #FFD700;
+  color: #8b4513;
   font-size: 1.2rem;
   font-weight: bold;
   text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
-  background: linear-gradient(45deg, rgba(255, 215, 0, 0.1), rgba(255, 165, 0, 0.1));
+  background: linear-gradient(45deg, rgba(139, 69, 19, 0.1), rgba(160, 82, 45, 0.1));
   padding: 0.5rem 1rem;
   border-radius: 8px;
-  border: 1px solid rgba(255, 215, 0, 0.3);
+  border: 1px solid rgba(139, 69, 19, 0.3);
   margin-top: 0.5rem;
+  opacity: 1 !important;
+  visibility: visible !important;
+  display: block !important;
+  z-index: 10;
+  position: relative;
 }
 
 .secret-button {
@@ -265,4 +316,65 @@ h1 {
 .sus-button.active {
   background: linear-gradient(45deg, #2ecc71, #27ae60) !important;
   border-color: #27ae60 !important;
+}
+
+.performance-toggle {
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  padding: 8px 16px;
+  min-width: 160px;
+  height: 40px;
+  border-radius: 20px;
+  background: #fff;
+  border: 2px solid #8b4513;
+  color: #8b4513;
+  font-size: 14px;
+  font-weight: bold;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  z-index: 1000;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+
+.performance-toggle:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.performance-toggle.active {
+  background: #8b4513;
+  color: #fff;
+  transition: none;
+}
+
+.performance-toggle.active:hover {
+  transform: none;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.spinning-background.paused {
+  animation: none;
+}
+
+.milk-overlay.no-animation {
+  animation: none;
+}
+
+.bread.no-animation {
+  transition: none !important;
+}
+
+.bread.no-animation:hover {
+  transform: none !important;
+}
+
+.bread.no-animation:active {
+  transform: none !important;
 }
