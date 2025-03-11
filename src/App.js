@@ -19,6 +19,10 @@ function App() {
   const [isMilkActive, setIsMilkActive] = useState(false);
   const [milkRotation, setMilkRotation] = useState(0);
   const [isMilkButtonUsed, setIsMilkButtonUsed] = useState(false);
+  const [isCroissantButtonUsed, setIsCroissantButtonUsed] = useState(false);
+  const [isCarActive, setIsCarActive] = useState(false);
+  const [isBagelButtonUsed, setIsBagelButtonUsed] = useState(false);
+  const [isBagelActive, setIsBagelActive] = useState(false);
   const [performanceMode, setPerformanceMode] = useState(true);
   
   // Audio handling system
@@ -83,70 +87,74 @@ function App() {
   }, []);
 
   // Click handling
-  const clickQueue = useRef([]);
-  const isProcessing = useRef(false);
   const isAnimating = useRef(false);
+  const lastSoundTime = useRef(0);
+  const SOUND_THROTTLE = 1000; // Increase sound throttle to reduce lag
+  const pointsRef = useRef(points);
+  const secretPointsRef = useRef(secretPoints);
+  const nextThresholdRef = useRef(nextSecretThreshold);
+  const lastClickTime = useRef(0);
+  const MIN_CLICK_INTERVAL = 50; // Minimum time between clicks
 
-  // Process clicks in batches
-  const processClickQueue = useCallback(() => {
-    if (isProcessing.current || clickQueue.current.length === 0) return;
+  // Keep refs in sync with state
+  useEffect(() => {
+    pointsRef.current = points;
+  }, [points]);
+
+  useEffect(() => {
+    secretPointsRef.current = secretPoints;
+    nextThresholdRef.current = nextSecretThreshold;
+  }, [secretPoints, nextSecretThreshold]);
+
+  // Ultra optimized click handler
+  const handleClick = useCallback((e) => {
+    // Prevent default to stop any browser handling
+    e.preventDefault();
+    e.stopPropagation();
+
+    const now = Date.now();
+    if (now - lastClickTime.current < MIN_CLICK_INTERVAL) {
+      return; // Skip if clicking too fast
+    }
+    lastClickTime.current = now;
+
+    // Update points using ref for immediate feedback
+    pointsRef.current += clickPower;
     
-    isProcessing.current = true;
-    const clicks = clickQueue.current;
-    clickQueue.current = [];
+    // Batch state updates in next animation frame
+    requestAnimationFrame(() => {
+      setPoints(pointsRef.current);
 
-    setPoints(prev => {
-      let newPoints = prev;
-      let secretPointsToAdd = 0;
-      let nextThreshold = nextSecretThreshold;
-
-      clicks.forEach(() => {
-        newPoints += clickPower;
-        if (newPoints >= nextThreshold) {
-          secretPointsToAdd++;
-          nextThreshold += 50;
-        }
-      });
-
-      if (secretPointsToAdd > 0) {
-        setSecretPoints(prev => prev + secretPointsToAdd);
-        setNextSecretThreshold(nextThreshold);
+      // Check for secret points
+      if (pointsRef.current >= nextThresholdRef.current) {
+        const secretPointsToAdd = Math.floor((pointsRef.current - nextThresholdRef.current) / 50) + 1;
+        const newSecretPoints = secretPointsRef.current + secretPointsToAdd;
+        const newThreshold = nextThresholdRef.current + (secretPointsToAdd * 50);
+        
+        secretPointsRef.current = newSecretPoints;
+        nextThresholdRef.current = newThreshold;
+        
+        setSecretPoints(newSecretPoints);
+        setNextSecretThreshold(newThreshold);
       }
-
-      return newPoints;
     });
 
-    isProcessing.current = false;
-  }, [clickPower, nextSecretThreshold]);
-
-  // Process queue periodically
-  useEffect(() => {
-    const interval = setInterval(processClickQueue, 50);
-    return () => clearInterval(interval);
-  }, [processClickQueue]);
-
-  const handleClick = useCallback(() => {
-    // Add click to queue
-    clickQueue.current.push(Date.now());
-
-    // Handle animation and sound
-    const now = Date.now();
-    const lastClick = clickQueue.current[clickQueue.current.length - 2];
-    const timeSinceLastClick = lastClick ? now - lastClick : Infinity;
-
-    if (timeSinceLastClick > 50) {
-      playClickSound();
-      
-      if (!isAnimating.current && !performanceMode) {
-        isAnimating.current = true;
-        setScale(0.9);
-        setTimeout(() => {
-          setScale(1);
-          isAnimating.current = false;
-        }, 100);
-      }
+    // Ultra minimal sound
+    if (now - lastSoundTime.current > SOUND_THROTTLE) {
+      lastSoundTime.current = now;
+      setTimeout(playClickSound, 0); // Defer sound to next tick
     }
-  }, [playClickSound, performanceMode]);
+    
+    // Super minimal animation only in normal mode
+    if (!performanceMode && !isAnimating.current) {
+      isAnimating.current = true;
+      setScale(0.99); // Smaller scale change
+      setTimeout(() => {
+        setScale(1);
+        isAnimating.current = false;
+      }, 16);
+    }
+  }, [clickPower, performanceMode, playClickSound]);
 
   const buyAutoClicker = useCallback(() => {
     if (points >= 30) {
@@ -216,6 +224,24 @@ function App() {
     }
   }, [points, isMilkButtonUsed, playBuySound]);
 
+  const activateCroissant = useCallback(() => {
+    if (points >= 600 && !isCroissantButtonUsed) {
+      setPoints(prev => prev - 600);
+      setIsCroissantButtonUsed(true);
+      setIsCarActive(true);
+      playBuySound();
+    }
+  }, [points, isCroissantButtonUsed, playBuySound]);
+
+  const activateBagel = useCallback(() => {
+    if (points >= 750 && !isBagelButtonUsed) {
+      setPoints(prev => prev - 750);
+      setIsBagelButtonUsed(true);
+      setIsBagelActive(true);
+      playBuySound();
+    }
+  }, [points, isBagelButtonUsed, playBuySound]);
+
   // Memoize shop buttons to prevent unnecessary re-renders
   const shopButtons = useMemo(() => (
     <div className="shop">
@@ -256,43 +282,169 @@ function App() {
       >
         Secret Button Two (Requires 10 Secret Bread Points)
       </button>
+      <div style={{ display: 'flex', gap: '1rem', width: '100%' }}>
+        <button 
+          className={`shop-button milk-button ${isMilkButtonUsed ? 'used' : points >= 500 ? 'available' : 'unavailable'}`}
+          onClick={activateMilk}
+          disabled={isMilkButtonUsed}
+          style={{ flex: 1 }}
+        >
+          Invite Milk Friend (500 points)
+        </button>
+        <button 
+          className={`shop-button milk-button ${isCroissantButtonUsed ? 'used' : points >= 600 ? 'available' : 'unavailable'}`}
+          onClick={activateCroissant}
+          disabled={isCroissantButtonUsed}
+          style={{ flex: 1 }}
+        >
+          Invite Croissant Friend (600 points)
+        </button>
+      </div>
       <button 
-        className={`shop-button milk-button ${isMilkButtonUsed ? 'used' : points >= 500 ? 'available' : 'unavailable'}`}
-        onClick={activateMilk}
-        disabled={isMilkButtonUsed}
+        className={`shop-button milk-button ${isBagelButtonUsed ? 'used' : points >= 750 ? 'available' : 'unavailable'}`}
+        onClick={activateBagel}
+        disabled={isBagelButtonUsed}
       >
-        Invite Milk Friend (500 points)
+        Invite Bagel Friend (750 points)
       </button>
     </div>
   ), [points, hasAutoClicker, autoClickerLevel, autoClickerSpeed, clickPowerLevel, 
-      secretPoints, secretButtonUsed, secretButton2Used, isMilkButtonUsed, isMilkActive,
+      secretPoints, secretButtonUsed, secretButton2Used, isMilkButtonUsed, isCroissantButtonUsed, isBagelButtonUsed, isMilkActive,
       buyAutoClicker, upgradeAutoClicker, upgradeClickPower, changeBreadIcon, 
-      changeToDrink, activateMilk]);
+      changeToDrink, activateMilk, activateCroissant, activateBagel]);
 
   // Optimize auto clicker
   useEffect(() => {
     if (!hasAutoClicker) return;
 
-    const interval = setInterval(() => {
-      clickQueue.current.push(Date.now());
+    let lastAutoClick = Date.now();
+    let intervalId;
+
+    // Use setInterval for consistent auto clicking
+    intervalId = setInterval(() => {
+      const now = Date.now();
       
-      if (!isAnimating.current) {
+      // Direct point update with ref
+      pointsRef.current += clickPower;
+      
+      // Batch state updates
+      requestAnimationFrame(() => {
+        setPoints(pointsRef.current);
+
+        if (pointsRef.current >= nextThresholdRef.current) {
+          const secretPointsToAdd = Math.floor((pointsRef.current - nextThresholdRef.current) / 50) + 1;
+          const newSecretPoints = secretPointsRef.current + secretPointsToAdd;
+          const newThreshold = nextThresholdRef.current + (secretPointsToAdd * 50);
+          
+          secretPointsRef.current = newSecretPoints;
+          nextThresholdRef.current = newThreshold;
+          
+          setSecretPoints(newSecretPoints);
+          setNextSecretThreshold(newThreshold);
+        }
+      });
+
+      // Minimal sound
+      if (now - lastSoundTime.current > SOUND_THROTTLE) {
+        lastSoundTime.current = now;
+        setTimeout(playClickSound, 0);
+      }
+
+      // Super minimal animation
+      if (!performanceMode && !isAnimating.current) {
         isAnimating.current = true;
-        setScale(0.9);
+        setScale(0.99);
         setTimeout(() => {
           setScale(1);
           isAnimating.current = false;
-        }, 100);
+        }, 16);
       }
-      playClickSound();
     }, autoClickerSpeed);
 
-    return () => clearInterval(interval);
-  }, [hasAutoClicker, autoClickerSpeed, playClickSound]);
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+    };
+  }, [hasAutoClicker, autoClickerSpeed, clickPower, performanceMode, playClickSound]);
+
+  // Cleanup
+  useEffect(() => {
+    return () => {
+      if (lastSoundTime.current) {
+        clearTimeout(lastSoundTime.current);
+      }
+    };
+  }, []);
 
   const togglePerformanceMode = useCallback(() => {
     setPerformanceMode(prev => !prev);
   }, []);
+
+  // Optimize bread container with better memoization
+  const breadContainerStyle = useMemo(() => ({
+    transform: performanceMode ? 'none' : `scale(${scale})`
+  }), [scale, performanceMode]);
+
+  // Memoize bread container with aggressive optimization
+  const breadContainer = useMemo(() => (
+    <div className="bread-container">
+      {isMilkActive && (
+        <img 
+          src="/milk.png"
+          alt="Milk"
+          className={`milk-overlay ${performanceMode ? 'no-animation' : ''}`}
+          style={{
+            transform: 'translate(-50%, -50%)',
+            position: 'absolute',
+            width: '150px',
+            height: '150px',
+            pointerEvents: 'none'
+          }}
+        />
+      )}
+      {isCarActive && (
+        <img 
+          src="/car.png"
+          alt="Car"
+          className={`milk-overlay ${performanceMode ? 'no-animation' : ''}`}
+          style={{
+            transform: 'translate(-50%, -50%)',
+            position: 'absolute',
+            width: '150px',
+            height: '150px',
+            pointerEvents: 'none',
+            left: '75%'
+          }}
+        />
+      )}
+      {isBagelActive && (
+        <img 
+          src="/Bagele1.png"
+          alt="Bagel"
+          className={`milk-overlay ${performanceMode ? 'no-animation' : ''}`}
+          style={{
+            transform: 'translate(-50%, -50%)',
+            position: 'absolute',
+            width: '150px',
+            height: '150px',
+            pointerEvents: 'none',
+            left: '150%'
+          }}
+        />
+      )}
+      <div 
+        className={`bread ${performanceMode ? 'no-animation' : ''}`}
+        onMouseDown={handleClick}
+        style={breadContainerStyle}
+      >
+        <img 
+          src={`/${breadIcon}`}
+          alt="Bread" 
+          className="bread-image"
+          draggable={false}
+        />
+      </div>
+    </div>
+  ), [isMilkActive, performanceMode, isCarActive, isBagelActive, handleClick, breadContainerStyle, breadIcon]);
 
   return (
     <div className="App" style={{ backgroundImage: `url(${backgroundImage})` }}>
@@ -314,33 +466,7 @@ function App() {
           <br />
           Next Secret Point: {nextSecretThreshold} points
         </div>
-        <div className="bread-container">
-          {isMilkActive && (
-            <img 
-              src="/milk.png"
-              alt="Milk"
-              className={`milk-overlay ${performanceMode ? 'no-animation' : ''}`}
-              style={{
-                transform: performanceMode ? 'translate(-50%, -50%)' : `rotate(${milkRotation}deg)`,
-                position: 'absolute',
-                width: '150px',
-                height: '150px',
-                pointerEvents: 'none'
-              }}
-            />
-          )}
-          <div 
-            className={`bread ${performanceMode ? 'no-animation' : ''}`}
-            onClick={handleClick}
-            style={{ transform: `scale(${scale})` }}
-          >
-            <img 
-              src={`/${breadIcon}`}
-              alt="Bread" 
-              className="bread-image"
-            />
-          </div>
-        </div>
+        {breadContainer}
         <div className={`shop-toggle ${performanceMode ? 'no-animation' : ''}`} onClick={toggleShop}>
           🛒
         </div>
